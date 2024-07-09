@@ -1,3 +1,5 @@
+mod enricher;
+
 use std::sync::Arc;
 use anyhow::Result;
 use netflow_parser::{NetflowParser,NetflowPacketResult};
