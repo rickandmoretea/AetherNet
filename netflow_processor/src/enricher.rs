@@ -1,5 +1,5 @@
 use cidr::IpCidr;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 use anyhow::Result;
 use std::fs;
@@ -8,20 +8,20 @@ use std::net::IpAddr;
 use std::str::FromStr;
 
 pub struct DataEnricher {
-    country_map: HashMap<IpCidr, String>,
-    as_map: HashMap<IpCidr, u32>
+    country_map: BTreeMap<IpCidr, String>,
+    as_map: BTreeMap<IpCidr, u32>
 }
 
 impl DataEnricher {
-    pub fn new() -> Result<Self> {
+    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         Ok(Self {
             country_map: Self::load_country_map("src/data/ipv4")?,
             as_map: Self::load_as_map("src/data/ip_to_as.txt")?,
         })
     }
 
-    fn load_country_map(directory: &str) -> Result<HashMap<IpCidr, String>, Box<dyn std::error::Error>> {
-        let mut map = HashMap::new();
+    fn load_country_map(directory: &str) -> Result<BTreeMap<IpCidr, String>, Box<dyn std::error::Error>> {
+        let mut map = BTreeMap::new();
         let dir_path = Path::new(directory);
 
         if dir_path.is_dir() {
@@ -47,10 +47,10 @@ impl DataEnricher {
 
         Ok(map)
     }
-    fn load_as_map(file_path: &str) -> Result<HashMap<IpCidr, u32>, Box<dyn std::error::Error>> {
+    fn load_as_map(file_path: &str) -> Result<BTreeMap<IpCidr, u32>, Box<dyn std::error::Error>> {
         let file = fs::File::open(file_path)?;
         let reader = BufReader::new(file);
-        let mut map = HashMap::new();
+        let mut map = BTreeMap::new();
 
         for line in reader.lines() {
             let line = line?;
@@ -66,12 +66,16 @@ impl DataEnricher {
     }
 
     pub fn enrich(&self, ip: IpAddr) -> (Option<String>, Option<u32>) {
-        let country = self.country_map.iter()
-            .find(|(cidr, _)| cidr.contains(&ip))
+        let country = self.country_map
+            .range(..=IpCidr::new(ip, 32).unwrap())
+            .next_back()
+            .filter(|(cidr, _)| cidr.contains(&ip))
             .map(|(_, country)| country.clone());
 
-        let as_number = self.as_map.iter()
-            .find(|(cidr, _)| cidr.contains(&ip))
+        let as_number = self.as_map
+            .range(..=IpCidr::new(ip, 32).unwrap())
+            .next_back()
+            .filter(|(cidr, _)| cidr.contains(&ip))
             .map(|(_, as_num)| *as_num);
 
         (country, as_number)
