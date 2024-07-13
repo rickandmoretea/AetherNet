@@ -1,5 +1,5 @@
 use cidr::IpCidr;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::path::Path;
 use anyhow::Result;
 use std::fs;
@@ -7,6 +7,7 @@ use std::io::{BufRead, BufReader};
 use std::net::IpAddr;
 use std::str::FromStr;
 
+#[derive(Clone)]
 pub struct DataEnricher {
     country_map: BTreeMap<IpCidr, String>,
     as_map: BTreeMap<IpCidr, u32>
@@ -18,6 +19,7 @@ impl DataEnricher {
             country_map: Self::load_country_map("src/data/ipv4")?,
             as_map: Self::load_as_map("src/data/ip_to_as.txt")?,
         })
+
     }
 
     fn load_country_map(directory: &str) -> Result<BTreeMap<IpCidr, String>, Box<dyn std::error::Error>> {
