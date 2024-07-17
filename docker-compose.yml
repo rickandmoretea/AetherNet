@@ -5,6 +5,7 @@ services:
     image: confluentinc/cp-kafka:latest
     ports:
       - "9092:9092"
+      - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
@@ -23,7 +24,23 @@ services:
       CLUSTER_ID: MkU2OEVBNTcwNTJENDM2Qk
     volumes:
       - kafka_data:/var/lib/kafka/data
-
+  kafka-setup:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - kafka
+    command:
+      - bash
+      - -c
+      - |
+        echo "Waiting for Kafka to be ready..."
+        cub kafka-ready -b kafka:29092 1 30
+        echo "Creating topic..."
+        kafka-topics --create --if-not-exists \
+          --bootstrap-server kafka:29092 \
+          --partitions 1 \
+          --replication-factor 1 \
+          --topic netflow_data
+    restart: on-failure
   timescaledb:
     image: timescale/timescaledb:latest-pg14
     ports:
@@ -48,7 +65,10 @@ services:
       - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+        - grafana_data:/var/lib/grafana
 
 volumes:
   timescale_data:
   kafka_data:
+  grafana_data:

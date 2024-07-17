@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use netflow_parser::{NetflowPacketResult};
 use netflow_parser::static_versions::v5::{V5, Header as V5Header, FlowSet as V5FlowSet};
 use netflow_parser::variable_versions::ipfix::{IPFix, Header as IPFixHeader, FlowSet as IPFixFlowSet, FlowSetBody};
@@ -5,6 +6,8 @@ use rand::Rng;
 use std::net::{UdpSocket, Ipv4Addr};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use netflow_parser::protocol::ProtocolTypes;
+use netflow_parser::variable_versions::common::{DataNumber, FieldValue};
+use netflow_parser::variable_versions::ipfix_lookup::IPFixField;
 
 fn generate_random_ip() -> Ipv4Addr {
     let mut rng = rand::thread_rng();
@@ -75,7 +78,16 @@ fn main() -> std::io::Result<()> {
                     body: FlowSetBody {
                         template: None,
                         options_template: None,
-                        data: None,
+                        data: Some(netflow_parser::variable_versions::ipfix::Data {
+                            data_fields: vec![
+                                BTreeMap::from([
+                                    (IPFixField::SourceIpv4address as usize, (IPFixField::SourceIpv4address, FieldValue::Ip4Addr(generate_random_ip()))),
+                                    (IPFixField::DestinationIpv4address as usize, (IPFixField::DestinationIpv4address, FieldValue::Ip4Addr(generate_random_ip()))),
+                                    (IPFixField::ProtocolIdentifier as usize, (IPFixField::ProtocolIdentifier, FieldValue::DataNumber(DataNumber::U64(rng.gen())))),
+                                    (IPFixField::OctetDeltaCount as usize, (IPFixField::OctetDeltaCount, FieldValue::DataNumber(DataNumber::U64(rng.gen())))),
+                                ])
+                            ],
+                        }),
                         options_data: None,
                     },
                 }],
