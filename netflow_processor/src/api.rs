@@ -1,8 +1,11 @@
 use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder, HttpServer, App};
 use chrono::{DateTime, Utc};
+use prometheus::Encoder;
 use serde::{Deserialize, Serialize};
 use tokio_postgres::Client;
+use tracing::info;
+use tracing_subscriber::registry;
 
 #[derive(Deserialize)]
 pub struct TimeRange {
@@ -16,6 +19,12 @@ pub struct TrafficData {
     as_number: Option<i32>,
     traffic: i64,
 }
+
+// async fn metrics() -> impl Responder {
+//     let encoder = prometheus::TextEncoder::new();
+//     let mut buffer = Vec::new();
+//     encoder.encode(&REGISTRY)
+// }
 
 pub async fn top_countries(
     db: web::Data<Arc<Client>>,
@@ -136,6 +145,7 @@ pub async fn traffic_by_as(
 }
 
 pub async fn run_api(db: Arc<Client>) -> std::io::Result<()> {
+    info!("Starting API server");
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(Arc::clone(&db)))
@@ -143,6 +153,7 @@ pub async fn run_api(db: Arc<Client>) -> std::io::Result<()> {
             .route("/top_as", web::get().to(top_as))
             .route("/traffic_by_country", web::get().to(traffic_by_country))
             .route("/traffic_by_as", web::get().to(traffic_by_as))
+            .route("/", web::get().to(metrics))
     })
         .bind("127.0.0.1:8080")?
         .run()
