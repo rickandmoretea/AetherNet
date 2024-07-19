@@ -153,7 +153,7 @@ pub async fn run_api(db: Arc<Client>) -> std::io::Result<()> {
             .route("/top_as", web::get().to(top_as))
             .route("/traffic_by_country", web::get().to(traffic_by_country))
             .route("/traffic_by_as", web::get().to(traffic_by_as))
-            .route("/", web::get().to(metrics))
+            .route("/", web::get().to(|| HttpResponse::Ok()))
     })
         .bind("127.0.0.1:8080")?
         .run()

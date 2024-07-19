@@ -3,8 +3,6 @@ mod kafka_handler;
 mod db_handler;
 mod enricher;
 mod api;
-mod metrics;
-mod metrics;
 
 use std::sync::Arc;
 // use tracing_subscriber::{fmt, EnvFilter};
